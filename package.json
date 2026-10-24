@@ -1,0 +1,1 @@
+{"name":"business-study-offline-pwa-test","private":true,"version":"1.0.0","scripts":{"test":"node tests/pwa.cjs","verify":"python3 scripts/update-release.py --verify"},"devDependencies":{"playwright":"^1.59.0"}}

@@ -1,0 +1,4 @@
+/service-worker.js
+  Cache-Control: no-cache
+/release.json
+  Cache-Control: no-store

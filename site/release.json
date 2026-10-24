@@ -1,0 +1,26 @@
+{
+  "format": 1,
+  "version": "20261024-pwa1",
+  "files": [
+    {
+      "path": "index.html",
+      "bytes": 3215390,
+      "sha256": "da963d727c22a3008626c0ed67abbb9eae880eaf5e27b7a0d7cfe3b1e4b852c4"
+    },
+    {
+      "path": "manifest.webmanifest",
+      "bytes": 596,
+      "sha256": "95157cf2450d0538ca274d49c8344ff2b9f5d63b0fa9fcee57d94284fcff7b04"
+    },
+    {
+      "path": "icons/icon-192.png",
+      "bytes": 812,
+      "sha256": "56673e47db8d17ab1390788746e16509cad048fddb94d719fd89d8eda90423ad"
+    },
+    {
+      "path": "icons/icon-512.png",
+      "bytes": 2674,
+      "sha256": "cc735e145748a5028844f5b982df3c3b0c7133046ab2745da7defdd8ea8f0933"
+    }
+  ]
+}

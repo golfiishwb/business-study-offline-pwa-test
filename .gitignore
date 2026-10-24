@@ -1,0 +1,5 @@
+node_modules/
+test-evidence/
+playwright-profile/
+*.log
+.DS_Store
