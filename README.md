@@ -1,5 +1,10 @@
 # 题库学习中心 · 独立离线 PWA 测试站
 
+**定位**：离线题库**复习运行时**（study / quiz shell）+ 内嵌演示题库。
+按章外置 JSON 是推荐的作者工作流；长期维护的业务题目应以它为准（可按章做成独立片段再导入），并符合 [题库数据约定](docs/question-bank-schema.md)；非开发作者请先读 [题库作者指南](docs/authoring-question-bank.md)。本仓库用 `npm run test:schema` 做约束校验。严格作者格式使用标准英文字段、显式题型与无重复的大写答案数组；运行时兼容的旧别名/扁平题/字符串答案仅可用 `--lenient` 做结构提示。
+
+本次仅补充作者规范、校验与 CI，不修改 `site/` 或离线版本 `20261025-pwa2`。
+
 用于 iPhone Safari 安装与离线验证。原有正式站和旧离线测试站均不修改。
 
 ## iPhone 安装
@@ -49,6 +54,8 @@ python3 scripts/update-release.py --verify
 提交至 `main` 后由 GitHub Actions 发布 `site/`。禁止只修改页面而复用旧的版本号。
 
 测试需 Node.js、Playwright 和 Chromium，运行 `npm install`、`npx playwright install chromium`、`npm test`。
+题库结构：`npm run test:schema`（先运行校验器边界回归；内嵌库 + 最小合法夹具必须通过；三个故意坏例须分别因预期错误被拒绝，脚本崩溃不算通过）。
+PR 自动运行结构校验、离线包完整性及入口漂移检查；仅 `main` 才部署 Pages，PR 不发布应用。
 测试输出在 `test-evidence/`，本机服务器日志区分实际到达的应用请求和浏览器的 SW 脚本检查。测试包含模拟故障版本，不会向 GitHub Pages 发布故障内容。
 
 ## 入口文件与离线快照

@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://golfiishwb.github.io/business-study-offline-pwa-test/schemas/question-bank.schema.json",
+  "title": "Business Study Offline PWA Question Bank",
+  "description": "Strict authoring subset (canonical keys, grouped arrays, explicit type, uppercase answer arrays). Runtime accepts additional legacy forms; see docs/question-bank-schema.md.",
+  "type": "array",
+  "minItems": 1,
+  "items": {
+    "type": "object",
+    "required": ["chapter", "section", "topic", "questions"],
+    "additionalProperties": true,
+    "properties": {
+      "chapter": {"type": "string", "minLength": 1, "pattern": "\\S"},
+      "section": {"type": "string", "minLength": 1, "pattern": "\\S"},
+      "topic": {"type": "string", "minLength": 1, "pattern": "\\S"},
+      "caseInfo": {
+        "description": "Shared case/material for the group. Must not be an array.",
+        "oneOf": [{"type": "string", "minLength": 1, "pattern": "\\S"}, {"type": "object"}, {"type": "null"}]
+      },
+      "caseUid": {"type": "string"},
+      "questions": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/question"}}
+    }
+  },
+  "$defs": {
+    "question": {
+      "type": "object",
+      "required": ["q", "o", "a", "type"],
+      "additionalProperties": true,
+      "properties": {
+        "uid": {"type": "string", "minLength": 1, "pattern": "\\S"},
+        "q": {"type": "string", "minLength": 1, "pattern": "\\S"},
+        "o": {"type": "array", "minItems": 2, "items": {"type": "string"}, "maxItems": 26},
+        "a": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Z]$", "minLength": 1, "maxLength": 1}},
+        "type": {"type": "string", "enum": ["single", "multiple", "judge"]},
+        "e": {"type": "string"},
+        "htmlContent": {"type": "string"},
+        "number": {},
+        "aiAnalysis": {"type": "string"},
+        "aiUpdatedAt": {"type": "string"}
+      },
+      "not": {"anyOf": [{"required": ["caseInfo"]}, {"required": ["材料"]}, {"required": ["背景"]}, {"required": ["案例"]}]},
+      "allOf": [
+        {"if": {"properties": {"type": {"enum": ["single", "judge"]}}}, "then": {"properties": {"a": {"maxItems": 1}}}},
+        {"if": {"properties": {"o": {"maxItems": 2}}}, "then": {"properties": {"a": {"items": {"enum": ["A", "B"]}}}}},
+        {"if": {"properties": {"o": {"maxItems": 3}}}, "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C"]}}}}},
+        {"if": {"properties": {"o": {"maxItems": 4}}}, "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D"]}}}}},
+        {"if": {"properties": {"o": {"maxItems": 5}}}, "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E"]}}}}},
+        {"if": {"properties": {"o": {"maxItems": 6}}}, "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F"]}}}}},
+        {"if": {"properties": {"o": {"maxItems": 7}}}, "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G"]}}}}},
+        {"if": {"properties": {"o": {"maxItems": 8}}}, "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H"]}}}}},
+        {
+          "if": {"properties": {"o": {"maxItems": 9}}},
+          "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I"]}}}}
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 10}}},
+          "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"]}}}}
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 11}}},
+          "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K"]}}}}
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 12}}},
+          "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"]}}}}
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 13}}},
+          "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"]}}}}
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 14}}},
+          "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N"]}}}}
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 15}}},
+          "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O"]}}}}
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 16}}},
+          "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"]}}}}
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 17}}},
+          "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q"]}}}}
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 18}}},
+          "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R"]}}}}
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 19}}},
+          "then": {"properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S"]}}}}
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 20}}},
+          "then": {
+            "properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T"]}}}
+          }
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 21}}},
+          "then": {
+            "properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U"]}}}
+          }
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 22}}},
+          "then": {
+            "properties": {"a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V"]}}}
+          }
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 23}}},
+          "then": {
+            "properties": {
+              "a": {"items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W"]}}
+            }
+          }
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 24}}},
+          "then": {
+            "properties": {
+              "a": {
+                "items": {"enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X"]}
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"o": {"maxItems": 25}}},
+          "then": {
+            "properties": {
+              "a": {
+                "items": {
+                  "enum": ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y"]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

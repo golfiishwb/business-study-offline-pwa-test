@@ -6,7 +6,8 @@
     "test": "node tests/pwa.cjs",
     "verify": "python3 scripts/update-release.py --verify",
     "test:ai": "node tests/ai-analysis.cjs",
-    "test:release": "python3 tests/release-checks.py"
+    "test:release": "python3 tests/release-checks.py",
+    "test:schema": "python3 tests/question-bank-schema.py --self-test && python3 tests/question-bank-schema.py && python3 tests/question-bank-schema.py fixtures/question-bank.minimal.valid.json && python3 tests/question-bank-schema.py --check-invalid-fixture"
   },
   "devDependencies": {
     "playwright": "^1.59.0"
