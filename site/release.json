@@ -1,11 +1,11 @@
 {
   "format": 1,
-  "version": "20261024-pwa1",
+  "version": "20261025-pwa2",
   "files": [
     {
       "path": "index.html",
-      "bytes": 3215390,
-      "sha256": "da963d727c22a3008626c0ed67abbb9eae880eaf5e27b7a0d7cfe3b1e4b852c4"
+      "bytes": 3217936,
+      "sha256": "2bf5e8f9c3a342670a0e7913e1f7c446eb42cdba48a73075e5439f0b1342e31f"
     },
     {
       "path": "manifest.webmanifest",

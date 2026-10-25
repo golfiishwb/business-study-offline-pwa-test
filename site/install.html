@@ -5,7 +5,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
-<meta name="offline-app-version" content="20261024-pwa1">
+<meta name="offline-app-version" content="20261025-pwa2">
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>题库学习中心</title>
@@ -24468,32 +24468,33 @@
     return saved&&String(saved.text||'').trim()?saved:null;
   }
   function applySavedAIAnalysis(card){
-    if(card.aiAnalysis&&String(card.aiAnalysis).trim()){
-      const key=qKey(card);
-      if(!aiAnalysisLibrary[key]){
-        aiAnalysisLibrary[key]={text:card.aiAnalysis,updatedAt:card.aiUpdatedAt||new Date().toISOString(),question:plainText(card.q),answers:Array.isArray(card.a)?card.a.slice():[]};
-        persistAIAnalysisLibrary();
-      }
-      return card;
-    }
+    // A user's local correction always wins over a bundled or imported copy.
     const saved=getSavedAIAnalysis(card);
-    if(saved){ card.aiAnalysis=saved.text; card.aiUpdatedAt=saved.updatedAt||null; }
+    if(saved){
+      card.aiAnalysis=saved.text;
+      card.aiUpdatedAt=saved.updatedAt||null;
+      if(card.__source){card.__source.aiAnalysis=saved.text;card.__source.aiUpdatedAt=card.aiUpdatedAt;}
+    }else if(card.aiAnalysis&&String(card.aiAnalysis).trim()){
+      aiAnalysisLibrary[qKey(card)]={text:card.aiAnalysis,updatedAt:card.aiUpdatedAt||new Date().toISOString(),question:plainText(card.q),answers:Array.isArray(card.a)?card.a.slice():[]};
+      persistAIAnalysisLibrary();
+    }
     return card;
   }
-  function persistAIAnalysisLibrary(){
-    try{ localStorage.setItem(AI_ANALYSIS_LIBRARY_KEY,JSON.stringify(aiAnalysisLibrary)); }
-    catch(_){ try{ localStorage.removeItem(AI_ANALYSIS_LIBRARY_KEY); }catch(__){} }
-    idbSetValue(AI_ANALYSIS_LIBRARY_IDB_KEY,aiAnalysisLibrary).catch(()=>{});
+  async function persistAIAnalysisLibrary(){
+    let localSaved=false,dbSaved=false;
+    try{localStorage.setItem(AI_ANALYSIS_LIBRARY_KEY,JSON.stringify(aiAnalysisLibrary));localSaved=true;}catch(_){}
+    try{await idbSetValue(AI_ANALYSIS_LIBRARY_IDB_KEY,aiAnalysisLibrary);dbSaved=true;}catch(_){}
+    return localSaved||dbSaved;
   }
   async function restoreAIAnalysisLibrary(){
-    try{
-      const value=await idbGetValue(AI_ANALYSIS_LIBRARY_IDB_KEY);
-      if(value&&typeof value==='object'){ aiAnalysisLibrary=value; return; }
-    }catch(_){}
-    try{
-      const value=JSON.parse(localStorage.getItem(AI_ANALYSIS_LIBRARY_KEY)||'{}');
-      if(value&&typeof value==='object') aiAnalysisLibrary=value;
-    }catch(_){}
+    let local={},database={};
+    try{const value=JSON.parse(localStorage.getItem(AI_ANALYSIS_LIBRARY_KEY)||'{}');if(value&&typeof value==='object')local=value;}catch(_){}
+    try{const value=await idbGetValue(AI_ANALYSIS_LIBRARY_IDB_KEY);if(value&&typeof value==='object')database=value;}catch(_){}
+    aiAnalysisLibrary={...local};
+    for(const [key,value] of Object.entries(database)){
+      const current=aiAnalysisLibrary[key];
+      if(!current||(Date.parse(value?.updatedAt)||0)>=(Date.parse(current?.updatedAt)||0))aiAnalysisLibrary[key]=value;
+    }
   }
   function getWrongMap(){ return wrongMapCache; }
   function setWrongMap(map){
@@ -24898,9 +24899,11 @@
          <div class="mt-3">
            <button id="ai-tutor-btn" class="px-3 py-1.5 bg-violet-100 text-violet-700 rounded-lg text-sm font-bold">${aiBtnText}</button>
            <div id="ai-tutor-response" class="mt-2 text-sm text-slate-700 whitespace-pre-wrap hidden"></div>
+           <button id="edit-ai-analysis-btn" type="button" class="mt-2 px-3 py-1.5 bg-violet-100 text-violet-700 rounded-lg text-sm font-bold hidden">编辑解析</button>
            <div id="ai-tutor-save" class="mt-2 hidden">
-             <textarea id="ai-tutor-analysis-input" class="w-full min-h-24 rounded-lg border border-violet-200 bg-white p-2 text-sm text-slate-700" placeholder="把 AI 的解析粘贴到这里，保存后下次可直接查看"></textarea>
+             <textarea id="ai-tutor-analysis-input" aria-label="AI 助教解析" class="w-full min-h-24 rounded-lg border border-violet-200 bg-white p-2 text-sm text-slate-700" placeholder="把 AI 的解析粘贴到这里，保存后下次可直接查看"></textarea>
              <button id="save-ai-analysis-btn" class="mt-2 px-3 py-1.5 bg-violet-600 text-white rounded-lg text-sm font-bold">保存 AI 助教解析</button>
+             <button id="cancel-ai-analysis-btn" type="button" class="mt-2 px-3 py-1.5 bg-slate-200 rounded-lg text-sm">取消</button>
            </div>
          </div>
        </div>
@@ -24914,6 +24917,9 @@
     document.getElementById('results-btn').onclick=showResults;
     document.getElementById('ai-tutor-btn').onclick=()=>getAITutorHelp(card);
     document.getElementById('save-ai-analysis-btn').onclick=()=>saveManualAIAnalysis(card);
+    document.getElementById('edit-ai-analysis-btn').onclick=()=>editAIAnalysis(card);
+    document.getElementById('cancel-ai-analysis-btn').onclick=()=>showAIAnalysis(card);
+    if(card.aiAnalysis&&String(card.aiAnalysis).trim()) showAIAnalysis(card);
     document.getElementById('toggle-mark-btn').onclick=()=>{ if(isMarkedWrong(card)) removeWrong(card); else addWrong(card); renderBack(card,ok); };
   }
 
@@ -25425,7 +25431,8 @@
     if(!copied) throw new Error('Copy failed');
   }
 
-  function persistAIAnalysis(card,aiText){
+  async function persistAIAnalysis(card,aiText){
+    const oldText=card.aiAnalysis,oldTime=card.aiUpdatedAt,key=qKey(card),oldEntry=aiAnalysisLibrary[key];
     card.aiAnalysis=aiText;
     card.aiUpdatedAt=new Date().toISOString();
     aiAnalysisLibrary[qKey(card)]={
@@ -25434,7 +25441,11 @@
       question:plainText(card.q),
       answers:Array.isArray(card.a)?card.a.slice():[]
     };
-    persistAIAnalysisLibrary();
+    if(!await persistAIAnalysisLibrary()){
+      card.aiAnalysis=oldText;card.aiUpdatedAt=oldTime;
+      if(oldEntry)aiAnalysisLibrary[key]=oldEntry;else delete aiAnalysisLibrary[key];
+      throw new Error('本地存储无法保存，请先复制解析并导出备份');
+    }
     const orig=card.__source || (()=>{
       const g=allQuizDataInGroupedFormat.find(g=>g.chapter===card.__chapter&&g.section===card.__section&&g.topic===card.__topic);
       if(!g) return null;
@@ -25448,32 +25459,48 @@
   }
 
   async function getAITutorHelp(card){
-    const btn=document.getElementById('ai-tutor-btn'), box=document.getElementById('ai-tutor-response'), saveBox=document.getElementById('ai-tutor-save');
-    if(!btn||!box) return;
-
-    if(card.aiAnalysis&&String(card.aiAnalysis).trim()){
-      box.classList.remove('hidden');
-      box.textContent=card.aiAnalysis;
-      btn.textContent='✨ 查看 AI 助教解析';
-      return;
-    }
+    const btn=document.getElementById('ai-tutor-btn'),box=document.getElementById('ai-tutor-response'),saveBox=document.getElementById('ai-tutor-save');
+    if(!btn||!box)return;
+    if(card.aiAnalysis&&String(card.aiAnalysis).trim()){showAIAnalysis(card);return;}
     box.classList.remove('hidden');
-    saveBox?.classList.remove('hidden');
+    saveBox.classList.remove('hidden');
     try{
       await copyText(aiTutorPrompt(card));
       box.textContent='题目提示已复制。请粘贴到 ChatGPT 或 Codex 获取解析；然后将回答粘贴到下方并保存。';
-    }catch(e){
-      box.textContent='暂时无法自动复制。请手动复制题目后在 AI 对话中提问，再把解析粘贴到下方保存。';
-    }
+    }catch(_){box.textContent='暂时无法自动复制。请手动复制题目后在 AI 对话中提问，再把解析粘贴到下方保存。';}
   }
-
-  function saveManualAIAnalysis(card){
+  function showAIAnalysis(card){
+    const box=document.getElementById('ai-tutor-response');
+    if(window.MathJax?.typesetClear){try{MathJax.typesetClear([box]);}catch(_){}}
+    box.textContent=card.aiAnalysis||'';
+    box.classList.toggle('hidden',!String(card.aiAnalysis||'').trim());
+    document.getElementById('ai-tutor-save').classList.add('hidden');
+    document.getElementById('ai-tutor-analysis-input').value=card.aiAnalysis||'';
+    document.getElementById('edit-ai-analysis-btn').classList.toggle('hidden',!String(card.aiAnalysis||'').trim());
+    if(window.MathJax?.typesetPromise)MathJax.typesetPromise([box]).catch(()=>{});
+  }
+  function editAIAnalysis(card){
+    const input=document.getElementById('ai-tutor-analysis-input');
+    input.value=card.aiAnalysis||'';
+    document.getElementById('ai-tutor-save').classList.remove('hidden');
+    document.getElementById('edit-ai-analysis-btn').classList.add('hidden');
+    document.getElementById('ai-tutor-response').classList.add('hidden');
+    input.focus();
+    input.scrollIntoView({block:'nearest'});
+  }
+  async function saveManualAIAnalysis(card){
     const input=document.getElementById('ai-tutor-analysis-input');
     const text=String(input?.value||'').trim();
-    if(!text){ showToast('请先粘贴 AI 助教解析'); return; }
-    persistAIAnalysis(card,text);
-    showToast('AI 助教解析已保存');
-    renderBack(card,userProgress[currentCardIndex]?.status==='correct');
+    if(!text){showToast('请先粘贴 AI 助教解析');return;}
+    const button=document.getElementById('save-ai-analysis-btn');
+    if(button.disabled)return;
+    button.disabled=true;
+    try{
+      await persistAIAnalysis(card,text);
+      showToast('AI 助教解析已保存');
+      if(currentQuizData[currentCardIndex]===card)renderBack(card,userProgress[currentCardIndex]?.status==='correct');
+    }catch(error){showToast('保存失败：'+error.message,5000);}
+    finally{button.disabled=false;}
   }
 
   /* ===== 成绩页 ===== */
