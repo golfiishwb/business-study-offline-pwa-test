@@ -3,10 +3,32 @@ const fs=require('fs'),path=require('path'),os=require('os'),http=require('http'
 const ROOT=process.env.PWA_SITE_DIRECTORY||path.resolve(__dirname,'../site');
 const OUT=process.env.AI_TEST_EVIDENCE||path.resolve(__dirname,'../test-evidence/ai-analysis');
 const BASE='/business-study-offline-pwa-test/',ORIGIN='http://127.0.0.1:8792',URL=ORIGIN+BASE;
-const PROFILE=fs.mkdtempSync(path.join(os.tmpdir(),'ai-editor-browser-'));
-function baselineFile(env,name){if(process.env[env])return fs.readFileSync(process.env[env]);return require('child_process').execFileSync('git',['-C',path.resolve(__dirname,'..'),'show','088126fe396dde1d355d7d0ee5f118ba585a6af0:site/'+name]);}
+// Stream historical HTML to a file: execFileSync's default stdout maxBuffer
+// is smaller than the bundled MathJax + question bank (over 3 MB).
+function baselineFile(env,name){
+  if(process.env[env])return fs.readFileSync(process.env[env]);
+  const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'pwa-ai-baseline-'));
+  const file=path.join(temporary,name);
+  let fd;
+  try{
+    fd=fs.openSync(file,'w');
+    require('child_process').execFileSync('git',[
+      '-C',path.resolve(__dirname,'..'),'show',
+      '088126fe396dde1d355d7d0ee5f118ba585a6af0:site/'+name
+    ],{stdio:['ignore',fd,'pipe'],timeout:30000});
+    fs.closeSync(fd);fd=undefined;
+    return fs.readFileSync(file);
+  }catch(error){
+    throw new Error('Cannot read historical AI-test baseline '+name+
+      '. Use a full Git checkout, or set '+env+' to a baseline file.',{cause:error});
+  }finally{
+    if(fd!==undefined)fs.closeSync(fd);
+    fs.rmSync(temporary,{recursive:true,force:true});
+  }
+}
 const baselineHTML=baselineFile('PWA_BASELINE_HTML','index.html');
 const baselineRelease=baselineFile('PWA_BASELINE_RELEASE','release.json');
+const PROFILE=fs.mkdtempSync(path.join(os.tmpdir(),'ai-editor-browser-'));
 let targetKey=null;let version='baseline',phase='initial-install',offline=false,context,page;
 const requests=[],network=[],results=[],errors=[];
 const mime={'.html':'text/html;charset=utf-8','.js':'application/javascript','.json':'application/json','.webmanifest':'application/manifest+json','.png':'image/png'};

@@ -10,7 +10,11 @@ if sys.argv[1:] == ['--verify']:
  for f in data['files']:
   content=(site/f['path']).read_bytes()
   assert len(content)==f['bytes'] and hashlib.sha256(content).hexdigest()==f['sha256'],f['path']
- assert ('content="'+data['version']+'"') in (site/'index.html').read_text()
+ content=(site/'index.html').read_bytes()
+ for name in ['install.html','learning.html']:
+  assert (site/name).read_bytes()==content, name+' drifted from index.html; regenerate the release'
+ assert (root/'src/service-worker.js').read_bytes()==(site/'service-worker.js').read_bytes(), 'Service Worker source and published copy differ'
+ assert ('content="'+data['version']+'"') in content.decode()
  print('Release verified:',data['version'])
 else:
  if len(sys.argv)!=2 or not re.fullmatch(r'[a-zA-Z0-9._-]{1,80}',sys.argv[1]):raise SystemExit('Usage: update-release.py VERSION | --verify')

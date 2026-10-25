@@ -51,6 +51,22 @@ python3 scripts/update-release.py --verify
 测试需 Node.js、Playwright 和 Chromium，运行 `npm install`、`npx playwright install chromium`、`npm test`。
 测试输出在 `test-evidence/`，本机服务器日志区分实际到达的应用请求和浏览器的 SW 脚本检查。测试包含模拟故障版本，不会向 GitHub Pages 发布故障内容。
 
+## 入口文件与离线快照
+
+`site/index.html` 是唯一应用页面编辑源；`install.html`、`learning.html` 是兼容入口，由 `scripts/update-release.py VERSION` 自动生成同内容副本。它们用于旧书签或首次在线直接访问，不应单独编辑。
+
+安装完成后，Service Worker 将首页、安装入口和学习入口的导航统一映射到缓存的 `index.html`；离线快照只保存一份约 3.2 MB 的应用页面。`release.json` 因此只列出 `index.html`、manifest 和两个图标；Service Worker 脚本由浏览器自身的注册生命周期管理，不放进应用快照。
+
+`--verify` 在发布前校验三个 HTML 的字节一致性，以及 `src/service-worker.js` 与发布副本的一致性；任何漂移都会阻止发布。仓库和托管仍保留三个入口文件，不把它们描述为已物理合并。
+
+## AI 回归测试基线
+
+`npm run test:ai` 使用历史版本 `088126fe396dde1d355d7d0ee5f118ba585a6af0` 验证“旧版已有解析 → 新版升级 → 离线编辑”的兼容性。请使用包含这段历史的完整 Git checkout；历史 HTML 通过文件描述符写入临时文件，避免 `execFileSync` 默认 stdout 缓冲区对大页面产生 `ENOBUFS`。临时文件在读取成功或失败后都会清理。
+
+`PWA_BASELINE_HTML` 和 `PWA_BASELINE_RELEASE` 仍支持指定外部基线文件，但正常完整 checkout 不需要设置它们。测试不依赖系统剪贴板复制成功，保留真实浏览器的剪贴板失败降级路径。
+
+真实 iPhone Safari 的验收步骤及待测项目见 [iOS 验收清单](docs/ios-acceptance.md)。Cursor 审计中的 `scripts/full-checklist.cjs` 未随摘要提供，当前仓库没有收录或声称运行过该脚本。
+
 ## 验证范围
 
 已使用真实 Chromium、390×844 触屏视口验证；模拟尺寸不等于 iPhone Safari 真机验证。iPhone 的 Safari/主屏幕安装、系统存储保留及操作系统后台行为仍需设备实测。
