@@ -2,25 +2,42 @@ name: Deploy offline PWA to GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
-  pages: write
-  id-token: write
 concurrency:
-  group: pages
+  group: pages-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: false
 jobs:
-  deploy:
+  validate:
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify release integrity
+        run: python3 scripts/update-release.py --verify
+      - name: Question-bank schema and release drift guards
+        run: |
+          python3 tests/question-bank-schema.py --self-test
+          python3 tests/question-bank-schema.py
+          python3 tests/question-bank-schema.py fixtures/question-bank.minimal.valid.json
+          python3 tests/question-bank-schema.py --check-invalid-fixture
+          python3 tests/release-checks.py
+  deploy:
+    needs: validate
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
-      - name: Verify release integrity
-        run: python3 scripts/update-release.py --verify
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
